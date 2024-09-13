@@ -6,7 +6,9 @@ const bodyParser = require('body-parser');
 const errorController = require('./controllers/error');
 const sequelize=require('./util/database')
 const Product = require('./models/product');
-const User = require('./models/user')
+const User = require('./models/user');
+const Cart = require('./models/cart');
+const CartItem = require('./models/cart-item')
 
 const app = express();
 
@@ -35,9 +37,16 @@ app.use(errorController.get404);
 
 Product.belongsTo(User , {constraints:true , onDelete : 'CASCADE'});
 User.hasMany(Product);
+User.hasOne(Cart);
+//inverse of above and it is optional
+Cart.belongsTo(User)
+
+//This is many-to-many relationship where Cart and Product will be associated with CartItem
+Cart.belongsToMany(Product, {through : CartItem})
+Product.belongsToMany(Cart , {through : CartItem})
 
 sequelize
-//.sync({force:true})
+// .sync({force:true})
 .sync()
 .then(result=>{
     return User.findByPk(1);
@@ -51,8 +60,11 @@ sequelize
     return user; 
 })
 .then(user=>{
-   console.log(user);
-   app.listen(3000) 
+//    console.log(user);
+     return user.createCart(); 
+})
+.then(cart=>{
+    app.listen(3000)
 })
 .catch(err=>{
     console.log(err)
